@@ -1,63 +1,33 @@
 import tkinter as tk
 from tkinter import messagebox
+import os
 import cv2
 import numpy as np
-import os
 import pyautogui
 import keyboard
-import time
 
-# 1. Funções de Interface Gráfica
+# Variável global para determinar se o programa está rodando ou não
+running = False
+
+# 1. Interface Gráfica
 def on_start():
-    detected, location = detect_puzzle_box()
-    if detected:
-        answer = messagebox.askyesno("Puzzle Box Detected", "Deseja iniciar o programa?")
-        if answer:
-            solve_puzzle_box(location)
+    global running
+    running = True
+    while running:
+        detected, location = detect_puzzle_box()
+        if detected:
+            answer = messagebox.askyesno("Puzzle Box Detected", "Deseja iniciar o programa?")
+            if answer:
+                click_puzzle_box(location)
+            # Parar após resolver um puzzle
+            running = False
+        # Esperar um pouco antes de verificar novamente
+        pyautogui.sleep(1.0)
 
 def on_stop():
     global running
     running = False
 
-# 2. Detecção do Puzzle Box
-def detect_puzzle_box():
-    # Aqui, você precisa implementar a captura de tela usando outra biblioteca, como pyscreenshot ou pygetwindow.
-    screenshot = ...  # Capturar a tela e converter para escala de cinza
-
-    for image_path in os.listdir("imagens_box"):
-        template = cv2.imread(os.path.join("imagens_box", image_path), 0)
-        result = cv2.matchTemplate(screenshot, template, cv2.TM_CCOEFF_NORMED)
-        _, max_val, _, max_loc = cv2.minMaxLoc(result)
-        
-        if max_val > 0.95:  # Threshold ajustável
-            return True, max_loc
-    return False, None
-
-# 3. Simulação de Cliques
-def click_puzzle_box(location):
-    pyautogui.click(location[0], location[1])
-    time.sleep(np.random.uniform(0.7, 1.0))  # Espera entre 700ms e 1s
-
-# 4. Solução do Puzzle Box
-def solve_puzzle_box(initial_location):
-    global running
-    running = True
-    while running:
-        # Aqui, você pode adicionar a lógica para solucionar o puzzle box.
-        # No exemplo, estamos apenas clicando no local detectado.
-        click_puzzle_box(initial_location)
-        # Adicione uma condição para parar quando o puzzle box for resolvido.
-
-# 5. Monitoramento de Atalhos de Teclado
-def monitor_keyboard():
-    while True:
-        if keyboard.is_pressed('F11'):
-            on_start()
-        elif keyboard.is_pressed('F12'):
-            on_stop()
-        time.sleep(0.1)
-
-# Interface Gráfica
 root = tk.Tk()
 root.title("Puzzle Box Solver")
 
@@ -67,8 +37,33 @@ start_button.pack(pady=20)
 stop_button = tk.Button(root, text="Stop", command=on_stop)
 stop_button.pack(pady=20)
 
-# Iniciar monitoramento de teclado em uma thread separada
-import threading
-threading.Thread(target=monitor_keyboard, daemon=True).start()
+# 2. Detecção do Puzzle Box
+def detect_puzzle_box():
+    # Capturar a tela
+    screenshot = pyautogui.screenshot()
+    screenshot_np = np.array(screenshot) 
+    gray_screenshot = cv2.cvtColor(screenshot_np, cv2.COLOR_BGR2GRAY)
 
+    for image_path in os.listdir("imagens_box"):
+        template = cv2.imread(os.path.join("imagens_box", image_path), 0)
+        result = cv2.matchTemplate(gray_screenshot, template, cv2.TM_CCOEFF_NORMED)
+        _, max_val, _, max_loc = cv2.minMaxLoc(result)
+        
+        if max_val > 0.95:  # Threshold ajustável
+            return True, max_loc
+    return False, None
+
+# 3. Simulação de Cliques
+def click_puzzle_box(location):
+    pyautogui.click(location[0], location[1])
+    pyautogui.sleep(np.random.uniform(0.7, 1.0))  # Espera entre 700ms e 1s
+
+# 4. Atalhos de Teclado
+def check_keyboard_input():
+    if keyboard.is_pressed('F11'):
+        on_start()
+    if keyboard.is_pressed('F12'):
+        on_stop()
+
+root.after(100, check_keyboard_input)  # Verifica a entrada do teclado a cada 100ms
 root.mainloop()
