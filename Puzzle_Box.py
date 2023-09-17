@@ -1,69 +1,88 @@
-import tkinter as tk
-from tkinter import messagebox
-import os
-import cv2
-import numpy as np
-import pyautogui
+import threading
+import customtkinter as ctk
+import random
+import re
+import time
+import pygetwindow
 import keyboard
 
-# Variável global para determinar se o programa está rodando ou não
-running = False
+class GlobalVariables:
+    isRunning = True
 
-# 1. Interface Gráfica
-def on_start():
-    global running
-    running = True
-    while running:
-        detected, location = detect_puzzle_box()
-        if detected:
-            answer = messagebox.askyesno("Puzzle Box Detected", "Deseja iniciar o programa?")
-            if answer:
-                click_puzzle_box(location)
-            # Parar após resolver um puzzle
-            running = False
-        # Esperar um pouco antes de verificar novamente
-        pyautogui.sleep(1.0)
+class GUI:
+    def __init__(self):
+        self.gui = ctk.CTk()  # Esta linha foi movida para o topo
+        self.gui.title("Slider Solver")
+        self.gui.geometry('250x250')
+        self.gui.resizable(False, False)
+        self.gui.eval('tk::PlaceWindow . center')
+        self.gui.clue_label = ctk.CTkLabel(self.gui, text="Digite as Instruções", font=("Lato-Regular", 13, 'bold'), text_color="#FFFFFF")
+        self.gui.clue_label.place(x=52, y=15)
+        self.gui.entry = ctk.CTkTextbox(self.gui, width=200, height=50)
+        self.gui.entry.place(x=23, y=50)
+        self.gui.start_button = ctk.CTkButton(self.gui, text="Iniciar (F9)", command=self.start_process, width=120, font=("Lato-Regular", 12, 'bold'), text_color="#FFFFFF")
+        self.gui.start_button.place(x=63, y=120)
+        self.gui.stop_button = ctk.CTkButton(self.gui, text="Parar (F10)", command=self.stop_process, width=120, font=("Lato-Regular", 12, 'bold'), text_color="#FFFFFF")
+        self.gui.stop_button.place(x=63, y=160)
+        self.gui.clear_button = ctk.CTkButton(self.gui, text="Limpar (F11)", command=self.clear_textbox, width=120, font=("Lato-Regular", 12, 'bold'), text_color="#FFFFFF")
+        self.gui.clear_button.place(x=63, y=200)
 
-def on_stop():
-    global running
-    running = False
+    def StartSolving(self, data):
+        solverData = data
+        array = self.sortingout(solverData["Instructions"])
+        random.seed()
+        rs2client_windows = [window for window in pygetwindow.getAllWindows() if "RuneScape" in window.title]
+        if len(rs2client_windows) > 0:
+            val = rs2client_windows[0]
+            val.activate()
+            for text in array:
+                millisecondsTimeout = random.uniform(0.1, 0.3)
+                if not GlobalVariables.isRunning:
+                    return
+                if "up" in text:
+                    keyboard.press("down")
+                    keyboard.release("down")
+                    time.sleep(millisecondsTimeout)
+                elif "left" in text:
+                    keyboard.press("right")
+                    keyboard.release("right")
+                    time.sleep(millisecondsTimeout)
+                elif "right" in text:
+                    keyboard.press("left")
+                    keyboard.release("left")
+                    time.sleep(millisecondsTimeout)
+                elif "down" in text:
+                    keyboard.press("up")
+                    keyboard.release("up")
+                    time.sleep(millisecondsTimeout)
 
-root = tk.Tk()
-root.title("Puzzle Box Solver")
+    def sortingout(self, instructions):
+        text = re.sub(r"[0-9]+\.", "", instructions)
+        text = text.replace("up", "up ")
+        text = text.replace("down", "down ")
+        text = text.replace("left", "left ")
+        text = text.replace("right", "right ")
+        return text.split()
 
-start_button = tk.Button(root, text="Start", command=on_start)
-start_button.pack(pady=20)
+    def start_process(self):
+        self.is_running = True
+        parameter = self.gui.entry.get("1.0", ctk.END)
+        instructions = parameter
+        parameter = " ".join(self.sortingout(instructions))
+        print(parameter)
+        threading.Thread(target=self.start_solving, args=(parameter,)).start()
+        self.gui.entry.delete("1.0", ctk.END)
 
-stop_button = tk.Button(root, text="Stop", command=on_stop)
-stop_button.pack(pady=20)
+    def start_solving(self, parameter):
+        solverData = {"Instructions": parameter}
+        self.StartSolving(solverData)
 
-# 2. Detecção do Puzzle Box
-def detect_puzzle_box():
-    # Capturar a tela
-    screenshot = pyautogui.screenshot()
-    screenshot_np = np.array(screenshot) 
-    gray_screenshot = cv2.cvtColor(screenshot_np, cv2.COLOR_BGR2GRAY)
+    def stop_process(self):
+        self.is_running = False
 
-    for image_path in os.listdir("imagens_box"):
-        template = cv2.imread(os.path.join("imagens_box", image_path), 0)
-        result = cv2.matchTemplate(gray_screenshot, template, cv2.TM_CCOEFF_NORMED)
-        _, max_val, _, max_loc = cv2.minMaxLoc(result)
-        
-        if max_val > 0.95:  # Threshold ajustável
-            return True, max_loc
-    return False, None
+    def clear_textbox(self):
+        self.gui.entry.delete("1.0", ctk.END)
 
-# 3. Simulação de Cliques
-def click_puzzle_box(location):
-    pyautogui.click(location[0], location[1])
-    pyautogui.sleep(np.random.uniform(0.7, 1.0))  # Espera entre 700ms e 1s
-
-# 4. Atalhos de Teclado
-def check_keyboard_input():
-    if keyboard.is_pressed('F11'):
-        on_start()
-    if keyboard.is_pressed('F12'):
-        on_stop()
-
-root.after(100, check_keyboard_input)  # Verifica a entrada do teclado a cada 100ms
-root.mainloop()
+if __name__ == "__main__":
+    app = GUI()
+    app.gui.mainloop()

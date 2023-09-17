@@ -1,0 +1,158 @@
+import cv2
+import numpy as np
+import keyboard
+from heapq import heappush, heappop
+import os
+import pyautogui
+import threading
+import customtkinter as ctk
+import time
+import pygetwindow
+import random
+
+class Node:
+    def __init__(self, state, parent=None, move=None):
+        self.state = state
+        self.parent = parent
+        self.move = move
+        self.g = 0 if parent is None else parent.g + 1
+        self.h = self.calculate_heuristic()
+        self.f = self.g + self.h
+
+    def calculate_heuristic(self):
+        h = 0
+        for i in range(5):
+            for j in range(5):
+                if self.state[i][j] != 0:
+                    x, y = divmod(self.state[i][j] - 1, 5)
+                    h += abs(x - i) + abs(y - j)
+        return h
+
+    def __lt__(self, other):
+        return self.f < other.f
+
+class PuzzleSolver:
+    def __init__(self):
+        self.templates = self.load_templates()
+
+    def load_templates(self):
+        templates = {}
+        for i in range(1, 26):
+            img = cv2.imread(f'imagens_box/{i}.png', 0)
+            templates[i] = img
+        return templates
+
+    def capture_current_state(self):
+        screenshot = cv2.imread('path_to_screenshot.png', 0)
+        return screenshot
+
+    def identify_pieces(self, screenshot):
+        positions = {}
+        w, h = list(self.templates.values())[0].shape[::-1]
+
+        for idx, template in self.templates.items():
+            if template.shape[0] <= screenshot.shape[0] and template.shape[1] <= screenshot.shape[1]:
+                res = cv2.matchTemplate(screenshot, template, cv2.TM_CCOEFF_NORMED)
+            else:
+                print(f"Template {idx} is larger than the screenshot. Skipping...")
+                continue
+
+            threshold = 0.95
+            loc = np.where(res >= threshold)
+            for pt in zip(*loc[::-1]):
+                positions[idx] = (pt[0] + w // 2, pt[1] + h // 2)
+                break
+        return positions
+
+    def positions_to_state(self, current_positions):
+        slot_size = self.templates[1].shape[0]
+        state = [[0 for _ in range(5)] for _ in range(5)]
+    
+        for piece, position in current_positions.items():
+            row = position[1] // slot_size
+            col = position[0] // slot_size
+            state[int(row)][int(col)] = piece
+
+        return state
+
+    def solve_puzzle(self, current_positions):
+        start_state = self.positions_to_state(current_positions)
+        target_state = [[1, 2, 3, 4, 5], [6, 7, 8, 9, 10], [11, 12, 13, 14, 15], [16, 17, 18, 19, 20], [21, 22, 23, 24, 0]]
+
+        open_list = []
+        heappush(open_list, Node(start_state))
+        closed_list = set()
+        moves = [(0, 1), (1, 0), (0, -1), (-1, 0)] 
+
+        while open_list:
+            current_node = heappop(open_list)
+            closed_list.add(tuple(map(tuple, current_node.state)))
+
+            if current_node.state == target_state:
+                moves = []
+                while current_node.parent:
+                    moves.append(current_node.move)
+                    current_node = current_node.parent
+                return moves[::-1]
+
+            zero_pos = [(i, row.index(0)) for i, row in enumerate(current_node.state) if 0 in row][0]
+
+            for move in moves:
+                new_pos = (zero_pos[0] + move[0], zero_pos[1] + move[1])
+                if 0 <= new_pos[0] < 5 and 0 <= new_pos[1] < 5:
+                    new_state = [row.copy() for row in current_node.state]
+                    new_state[zero_pos[0]][zero_pos[1]], new_state[new_pos[0]][new_pos[1]] = new_state[new_pos[0]][new_pos[1]], new_state[zero_pos[0]][zero_pos[1]]
+                
+                    if tuple(map(tuple, new_state)) not in closed_list:
+                        heappush(open_list, Node(new_state, current_node, move))
+
+        return []
+
+    def simulate_moves(self, moves):
+        for move in moves:
+            if move == (0, 1):
+                keyboard.press("right")
+                keyboard.release("right")
+            elif move == (1, 0):
+                keyboard.press("down")
+                keyboard.release("down")
+            elif move == (0, -1):
+                keyboard.press("left")
+                keyboard.release("left")
+            elif move == (-1, 0):
+                keyboard.press("up")
+                keyboard.release("up")
+
+    def start(self):
+        screenshot = self.capture_current_state()
+        current_positions = self.identify_pieces(screenshot)
+        moves = self.solve_puzzle(current_positions)
+        self.simulate_moves(moves)
+
+class GlobalVariables:
+    isRunning = True
+
+class GUI:
+    def __init__(self):
+        self.solver = PuzzleSolver()
+        
+        self.gui = ctk.CTk()
+        self.gui.title("Slider Solver")
+        self.gui.geometry('250x250')
+        self.gui.resizable(False, False)
+        self.gui.eval('tk::PlaceWindow . center')
+
+        self.gui.start_button = ctk.CTkButton(self.gui, text="Start (F9)", command=self.start_process, width=120, font=("Lato-Regular", 12, 'bold'), text_color="#FFFFFF")
+        self.gui.start_button.place(x=63, y=120)
+        self.gui.stop_button = ctk.CTkButton(self.gui, text="Stop (F10)", command=self.stop_process, width=120, font=("Lato-Regular", 12, 'bold'), text_color="#FFFFFF")
+        self.gui.stop_button.place(x=63, y=160)
+
+    def start_process(self):
+        threading.Thread(target=self.solver.start).start()
+
+    def stop_process(self):
+        GlobalVariables.isRunning = False
+
+if __name__ == "__main__":
+    app = GUI()
+    app.gui.mainloop()
