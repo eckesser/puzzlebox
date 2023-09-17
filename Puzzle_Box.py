@@ -11,7 +11,7 @@ class GlobalVariables:
 
 class GUI:
     def __init__(self):
-        self.gui = ctk.CTk()  # Esta linha foi movida para o topo
+        self.gui = ctk.CTk()
         self.gui.title("Slider Solver")
         self.gui.geometry('250x250')
         self.gui.resizable(False, False)
@@ -27,6 +27,29 @@ class GUI:
         self.gui.clear_button = ctk.CTkButton(self.gui, text="Limpar (F11)", command=self.clear_textbox, width=120, font=("Lato-Regular", 12, 'bold'), text_color="#FFFFFF")
         self.gui.clear_button.place(x=63, y=200)
 
+        # Iniciar o monitoramento da área de transferência
+        self.last_clipboard = self.gui.clipboard_get()  # Pegar o atual conteúdo da área de transferência
+        self.gui.after(1000, self.check_clipboard)  # Verificar a área de transferência a cada 1 segundo
+
+    def check_clipboard(self):
+        try:
+            clipboard_content = self.gui.clipboard_get()  # Tentar pegar o conteúdo atual da área de transferência
+            if clipboard_content != self.last_clipboard:  # Se o conteúdo mudar
+                if self.is_valid_instruction(clipboard_content):  # Se for uma instrução válida
+                    self.gui.entry.delete("1.0", ctk.END)  # Limpar a caixa de entrada
+                    self.gui.entry.insert(ctk.END, clipboard_content)  # Inserir a nova instrução
+                    self.start_process()  # Iniciar o processo
+                self.last_clipboard = clipboard_content  # Atualizar o último conteúdo da área de transferência
+        except:
+            pass
+        finally:
+            self.gui.after(1000, self.check_clipboard)  # Continuar verificando a área de transferência
+
+    def is_valid_instruction(self, text):
+        # Aqui você pode adicionar mais lógica para verificar se o texto copiado é uma instrução válida.
+        # Por enquanto, estou apenas verificando se o texto começa com um número seguido por um ponto.
+        return bool(re.match(r"^[0-9]+\.", text))
+    
     def StartSolving(self, data):
         solverData = data
         array = self.sortingout(solverData["Instructions"])
@@ -36,7 +59,7 @@ class GUI:
             val = rs2client_windows[0]
             val.activate()
             for text in array:
-                millisecondsTimeout = random.uniform(0.1, 0.3)
+                millisecondsTimeout = random.uniform(0.150, 0.300)
                 if not GlobalVariables.isRunning:
                     return
                 if "up" in text:
