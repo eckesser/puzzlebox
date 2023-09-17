@@ -12,7 +12,7 @@ class GlobalVariables:
 class GUI:
     def __init__(self):
         self.gui = ctk.CTk()
-        self.gui.title("Slider Solver")
+        self.gui.title("Puzzle Box (=D)")
         self.gui.geometry('250x250')
         self.gui.resizable(False, False)
         self.gui.eval('tk::PlaceWindow . center')
