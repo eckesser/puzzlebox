@@ -12,10 +12,14 @@ class GlobalVariables:
 class GUI:
     def __init__(self):
         self.gui = ctk.CTk()
-        self.gui.title("Puzzle Box (=D)")
+        self.gui.title("Puzzle Box v1.0")
         self.gui.geometry('250x250')
         self.gui.resizable(False, False)
         self.gui.eval('tk::PlaceWindow . center')
+
+        # Define o ícone para a janela do programa
+        self.gui.iconbitmap(r'C:\Users\Eck\Desktop\Projetos\puzzlebox\icone_small.ico')
+
         self.gui.clue_label = ctk.CTkLabel(self.gui, text="Digite as Instruções", font=("Lato-Regular", 13, 'bold'), text_color="#FFFFFF")
         self.gui.clue_label.place(x=52, y=15)
         self.gui.entry = ctk.CTkTextbox(self.gui, width=200, height=50)
@@ -46,8 +50,6 @@ class GUI:
             self.gui.after(1000, self.check_clipboard)  # Continuar verificando a área de transferência
 
     def is_valid_instruction(self, text):
-        # Aqui você pode adicionar mais lógica para verificar se o texto copiado é uma instrução válida.
-        # Por enquanto, estou apenas verificando se o texto começa com um número seguido por um ponto.
         return bool(re.match(r"^[0-9]+\.", text))
     
     def StartSolving(self, data):
@@ -59,9 +61,9 @@ class GUI:
             val = rs2client_windows[0]
             val.activate()
             for text in array:
-                millisecondsTimeout = random.uniform(0.150, 0.300)
-                if not GlobalVariables.isRunning:
+                if keyboard.is_pressed('F10') or not GlobalVariables.isRunning:
                     return
+                millisecondsTimeout = random.uniform(0.150, 0.300)
                 if "up" in text:
                     keyboard.press("down")
                     keyboard.release("down")
@@ -88,7 +90,7 @@ class GUI:
         return text.split()
 
     def start_process(self):
-        self.is_running = True
+        GlobalVariables.isRunning = True
         parameter = self.gui.entry.get("1.0", ctk.END)
         instructions = parameter
         parameter = " ".join(self.sortingout(instructions))
@@ -101,7 +103,7 @@ class GUI:
         self.StartSolving(solverData)
 
     def stop_process(self):
-        self.is_running = False
+        GlobalVariables.isRunning = False
 
     def clear_textbox(self):
         self.gui.entry.delete("1.0", ctk.END)
