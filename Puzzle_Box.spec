@@ -8,7 +8,7 @@ a = Analysis(
     ['Puzzle_Box.py'],
     pathex=[],
     binaries=[],
-    datas=[],
+    datas=[('icone_small.ico', '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -41,4 +41,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon=['icone_small.ico'],
 )

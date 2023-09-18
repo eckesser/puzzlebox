@@ -5,6 +5,9 @@ import re
 import time
 import pygetwindow
 import keyboard
+import os
+import sys
+
 
 class GlobalVariables:
     isRunning = True
@@ -17,8 +20,16 @@ class GUI:
         self.gui.resizable(False, False)
         self.gui.eval('tk::PlaceWindow . center')
 
-        # Define o ícone para a janela do programa
-        self.gui.iconbitmap(r'C:\Users\Eck\Desktop\Projetos\puzzlebox\icone_small.ico')
+        # Ajuste para encontrar o ícone corretamente
+        if getattr(sys, 'frozen', False):
+            # Se o programa estiver "congelado" (compilado), use o diretório do executável
+            basedir = sys._MEIPASS
+        else:
+            # Caso contrário, use o diretório atual
+            basedir = os.path.dirname(os.path.abspath(__file__))
+
+        icon_path = os.path.join(basedir, 'icone_small.ico')
+        self.gui.iconbitmap(icon_path)
 
         self.gui.clue_label = ctk.CTkLabel(self.gui, text="Digite as Instruções", font=("Lato-Regular", 13, 'bold'), text_color="#FFFFFF")
         self.gui.clue_label.place(x=52, y=15)
