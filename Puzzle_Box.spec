@@ -41,5 +41,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['icone_small.ico'],
+    icon=['C:\\Program Files (x86)\\Puzzle Box\\icone_small.ico'],
 )

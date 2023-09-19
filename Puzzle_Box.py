@@ -28,7 +28,7 @@ class GUI:
             # Caso contrário, use o diretório atual
             basedir = os.path.dirname(os.path.abspath(__file__))
 
-        icon_path = os.path.join(basedir, 'icone_small.ico')
+        icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'icone_small.ico')
         self.gui.iconbitmap(icon_path)
 
         self.gui.clue_label = ctk.CTkLabel(self.gui, text="Digite as Instruções", font=("Lato-Regular", 13, 'bold'), text_color="#FFFFFF")

@@ -2,8 +2,8 @@
 !define MyAppVersion "1.0"
 !define MyAppPublisher "E. =D"
 !define OutputDir "."
-!define OutPutFileName "PuzzleBoxInstaller"
-!define INSTALLER_ICON "C:\Users\Eck\Desktop\Projetos\puzzlebox\icone_small.ico"
+!define OutPutFileName "Puzzle Box Installer"
+!define INSTALLER_ICON "C:\Program Files (x86)\Puzzle Box\icone_small.ico"
 
 Outfile "${OutPutFileName}.exe"
 SetCompressor /SOLID lzma
